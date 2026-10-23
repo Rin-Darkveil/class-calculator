@@ -1,16 +1,33 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>クラスアップ ステータス計算機</title><style>*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#101114;color:#f5f5f5}main{max-width:720px;margin:auto;padding:20px}h1{font-size:24px}.sub,.note{color:#aaa;font-size:13px}.card{background:#191b20;border:1px solid #30333a;border-radius:14px;padding:16px;margin-bottom:14px}.row,.stats,.result{display:grid;grid-template-columns:1fr 1fr;gap:10px}label{color:#bbb;font-size:13px}input,select{width:100%;margin-top:5px;padding:12px;border:1px solid #3a3e47;border-radius:9px;background:#111318;color:#fff;font-size:16px}.result div{background:#111318;border-radius:9px;padding:11px}.result small{display:block;color:#999}.result b{font-size:21px}.formula{font-weight:700;margin-bottom:12px}@media(min-width:560px){.stats,.result{grid-template-columns:repeat(3,1fr)}}</style></head><body><main><h1>クラスアップ ステータス計算機</h1><p class="sub">現在ステから目標クラスのステータスを予測</p><section class="card"><div class="row"><label>現在クラス<select id="c"></select></label><label>目標クラス<select id="t"></select></label></div></section><section class="card"><div class="stats" id="inputs"></div></section>
-<section class="card"><label>役職
-<select id="role">
-<option value="none">なし</option>
-<option value="fighter">ファイター（攻撃 +10%）</option>
-<option value="sorcerer">ソーサラー（魔攻 +10%）</option>
-<option value="guardian">ガーディアン（HP・防御・魔防 +10%）</option>
-<option value="healer">ヒーラー（回復 +20%）</option>
-</select></label><p class="note">役職補正はクラスアップ後の予測ステータスに反映します。</p></section><section class="card"><div id="formula" class="formula"></div><div id="result" class="result"></div><p class="note">計算式：現在ステ ×（目標クラス＋1）÷（現在クラス＋1）<br>※素早さは計算対象外<br>※実測値からの推定式です。<br>※C8実測でも、役職補正を除いたステータスは従来の倍率則と一致。</p></section></main><script>const c=document.querySelector('#c'),t=document.querySelector('#t');for(let i=1;i<=8;i++){c.add(new Option('C'+i,i));t.add(new Option('C'+i,i))}c.value=7;t.value=8;const names=['HP','防御','魔防','回復','攻撃','魔攻'];const ins=document.querySelector('#inputs');names.forEach(n=>{let l=document.createElement('label');l.textContent=n;let x=document.createElement('input');x.type='number';x.min='0';x.inputMode='numeric';x.dataset.name=n;l.appendChild(x);ins.appendChild(l)});const inputs=[...ins.querySelectorAll('input')],r=document.querySelector('#result'),f=document.querySelector('#formula'),role=document.querySelector('#role');function roleRate(n){
- if(role.value==='fighter'&&n==='攻撃')return 1.10;
- if(role.value==='sorcerer'&&n==='魔攻')return 1.10;
- if(role.value==='guardian'&&['HP','防御','魔防'].includes(n))return 1.10;
- if(role.value==='healer'&&n==='回復')return 1.20;
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>クラスアップ ステータス計算機</title><style>*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#101114;color:#f5f5f5}main{max-width:720px;margin:auto;padding:20px}h1{font-size:24px}.sub,.note{color:#aaa;font-size:13px}.card{background:#191b20;border:1px solid #30333a;border-radius:14px;padding:16px;margin-bottom:14px}.row,.stats,.result{display:grid;grid-template-columns:1fr 1fr;gap:10px}label{color:#bbb;font-size:13px}input,select{width:100%;margin-top:5px;padding:12px;border:1px solid #3a3e47;border-radius:9px;background:#111318;color:#fff;font-size:16px}.result div{background:#111318;border-radius:9px;padding:11px}.result small{display:block;color:#999}.result b{font-size:21px}.raw{display:block;color:#8f98a8;font-size:12px;margin-top:4px}.formula{font-weight:700;margin-bottom:12px}@media(min-width:560px){.stats,.result{grid-template-columns:repeat(3,1fr)}}</style></head><body><main><h1>クラスアップ ステータス計算機</h1><p class="sub">現在ステから目標クラスのステータスを予測</p><section class="card"><div class="row"><label>現在クラス<select id="c"></select></label><label>目標クラス<select id="t"></select></label></div></section><section class="card"><div class="stats" id="inputs"></div></section>
+<section class="card"><div class="row">
+<label>現在の役職<select id="currentRole"><option value="none">なし</option><option value="fighter">ファイター</option><option value="sorcerer">ソーサラー</option><option value="guardian">ガーディアン</option><option value="healer">ヒーラー</option></select></label>
+<label>目標の役職<select id="targetRole"><option value="none">なし</option><option value="fighter">ファイター</option><option value="sorcerer">ソーサラー</option><option value="guardian">ガーディアン</option><option value="healer">ヒーラー</option></select></label>
+</div><p class="note">ゲーム画面に表示されている「役職補正込み」の能力値をそのまま入力できます。現在の役職補正を逆算してからクラス換算し、最後に目標役職の補正を適用します。</p></section><section class="card"><div id="formula" class="formula"></div><div id="result" class="result"></div><p class="note">計算式：表示ステ ÷ 現在役職補正 ×（目標クラス＋1）÷（現在クラス＋1）× 目標役職補正<br>※素早さは計算対象外<br>※実測値からの推定式です。<br>※C8実測でも、役職補正を除いたステータスは従来の倍率則と一致。</p></section></main><script>const c=document.querySelector('#c'),t=document.querySelector('#t');for(let i=1;i<=8;i++){c.add(new Option('C'+i,i));t.add(new Option('C'+i,i))}c.value=7;t.value=8;const names=['HP','防御','魔防','回復','攻撃','魔攻'];const ins=document.querySelector('#inputs');names.forEach(n=>{let l=document.createElement('label');l.textContent=n;let x=document.createElement('input');x.type='number';x.min='0';x.inputMode='numeric';x.dataset.name=n;l.appendChild(x);ins.appendChild(l)});const inputs=[...ins.querySelectorAll('input')],r=document.querySelector('#result'),f=document.querySelector('#formula'),currentRole=document.querySelector('#currentRole'),targetRole=document.querySelector('#targetRole');function roleRate(role,n){
+ if(role==='fighter'&&n==='攻撃')return 1.10;
+ if(role==='sorcerer'&&n==='魔攻')return 1.10;
+ if(role==='guardian'&&['HP','防御','魔防'].includes(n))return 1.10;
+ if(role==='healer'&&n==='回復')return 1.20;
  return 1;
 }
-function calc(){let a=+c.value,b=+t.value,q=(b+1)/(a+1);f.textContent=`C${a} → C${b}　×${b+1} ÷ ${a+1}（約×${q.toFixed(3)}）`;r.innerHTML='';inputs.forEach(x=>{let d=document.createElement('div'),s=document.createElement('small'),v=document.createElement('b');s.textContent=x.dataset.name;v.textContent=x.value===''?'—':Math.round(Math.max(0,+x.value)*q*roleRate(x.dataset.name)).toLocaleString();d.append(s,v);r.appendChild(d)})}[c,t,role,...inputs].forEach(x=>x.addEventListener('input',calc));calc()</script></body></html>
+function calc(){
+ let a=+c.value,b=+t.value,q=(b+1)/(a+1);
+ f.textContent=`C${a} → C${b}　×${b+1} ÷ ${a+1}（約×${q.toFixed(3)}）`;
+ r.innerHTML='';
+ inputs.forEach(x=>{
+  let d=document.createElement('div'),sm=document.createElement('small'),v=document.createElement('b'),raw=document.createElement('span');
+  sm.textContent=x.dataset.name;
+  if(x.value===''){v.textContent='—';raw.textContent='';}
+  else{
+   let shown=Math.max(0,+x.value);
+   let baseNow=shown/roleRate(currentRole.value,x.dataset.name);
+   let baseTarget=baseNow*q;
+   let finalTarget=baseTarget*roleRate(targetRole.value,x.dataset.name);
+   v.textContent=Math.round(finalTarget).toLocaleString();
+   raw.className='raw';
+   raw.textContent=`補正前目安 ${Math.round(baseTarget).toLocaleString()}`;
+  }
+  d.append(sm,v,raw);r.appendChild(d);
+ })
+}
+[c,t,currentRole,targetRole,...inputs].forEach(x=>x.addEventListener('input',calc));
+calc()</script></body></html>
